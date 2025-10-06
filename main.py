@@ -25,11 +25,14 @@ PORT = int(os.getenv("PORT", 8080))
 # -------------------
 # Setup Gemini Credentials
 # -------------------
-# Write SERVICE_ACCOUNT_JSON to a temp file
-with open("service-account.json", "w") as f:
-    f.write(SERVICE_ACCOUNT_JSON)
+# Make sure the keys folder exists
+os.makedirs("keys", exist_ok=True)
 
-SERVICE_ACCOUNT_FILE = "service-account.json"
+SERVICE_ACCOUNT_FILE = "keys/service-account.json"
+
+# Write SERVICE_ACCOUNT_JSON to the path
+with open(SERVICE_ACCOUNT_FILE, "w") as f:
+    f.write(SERVICE_ACCOUNT_JSON)
 
 credentials = service_account.Credentials.from_service_account_file(
     SERVICE_ACCOUNT_FILE,
@@ -62,7 +65,7 @@ def gemini_generate(prompt: str) -> str:
 # -------------------
 app = FastAPI(title="🌾 AgriGenius MCP Server (Gemini-Powered)")
 
-# OpenAI model (if you want OpenAI fallback)
+# OpenAI model (fallback)
 model = OpenAIChatCompletionsModel(
     model="models/text-bison-001",
     openai_client=external_client
@@ -113,18 +116,13 @@ async def process_query(request: Request):
     if not user_query:
         return {"error": "Missing 'query' in request body."}
 
-    # -------------------
     # Run agent
-    # -------------------
     try:
-        # Call Gemini directly instead of OpenAI SDK if you prefer
         response_text = gemini_generate(user_query).strip()
     except Exception as e:
         return {"error": f"Agent error: {str(e)}"}
 
-    # -------------------
     # Parse JSON from Gemini response
-    # -------------------
     try:
         parsed_data = json.loads(response_text.replace("'", "\""))
     except json.JSONDecodeError:
@@ -133,9 +131,7 @@ async def process_query(request: Request):
             "analysis": response_text
         }
 
-    # -------------------
     # Optional Firebase saving
-    # -------------------
     if FIREBASE_URL:
         try:
             payload = {
@@ -153,7 +149,4 @@ async def process_query(request: Request):
 # Run locally
 # -------------------
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8080))
-    uvicorn.run(app, host="0.0.0.0", port=port)
-
-
+    uvicorn.run(app, host="0.0.0.0", port=PORT)
