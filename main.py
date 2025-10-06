@@ -23,7 +23,7 @@ model = OpenAIChatCompletionsModel(
 chatbot_agent = Agent(
     name="AgriGenius Chatbot Agent",
     instructions="You answer general agricultural questions about crops, fertilizers, and weather in a friendly way.",
-    model="google/gemini-1.5-flash"
+    model=model
 )
 
 # Technical agent
@@ -35,14 +35,14 @@ agriculture_agent = Agent(
         "you respond ONLY in pure JSON format like:\n"
         "{'topic': 'Crop Disease Report', 'disease': 'Blight', 'solution': 'Use Mancozeb fungicide', 'irrigation_advice': 'Avoid overwatering'}"
     ),
-   model="google/gemini-1.5-flash"
+   model=model
 )
 
 # Router agent
 main_agent = Agent(
     name="Main Agent",
     instructions="Route queries: general → chatbot_agent, technical → agriculture_agent.",
-    model="google/gemini-1.5-flash",
+    model=model,
     handoffs=[chatbot_agent, agriculture_agent],
 )
 
