@@ -9,6 +9,7 @@ from client import external_client  # your shared Gemini client
 from dotenv import load_dotenv
 import os
 import requests
+import uvicorn  # ✅ import added here
 
 load_dotenv()
 
@@ -91,3 +92,11 @@ async def process_query(request: Request):
             print("⚠️ Firebase Save Error:", e)
 
     return {"response": response_text}
+
+
+# -------------------------
+#  SERVER START (needed for Railway)
+# -------------------------
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8080))
+    uvicorn.run(app, host="0.0.0.0", port=port)
