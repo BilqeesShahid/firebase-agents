@@ -15,7 +15,7 @@ if not os.getenv("OPENAI_API_KEY") and os.getenv("GEMINI_API_KEY"):
 app = FastAPI(title="🌾 AgriGenius MCP Server (Gemini-Powered)")
 
 model = OpenAIChatCompletionsModel(
-    model="google/gemini-1.5-flash",
+    model="gpt-4",
     openai_client=external_client
 )
 
