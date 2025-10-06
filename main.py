@@ -1,16 +1,13 @@
 # main.py
 from fastapi import FastAPI, Request
-from agents import (
-    Agent,
-    Runner,
-    OpenAIChatCompletionsModel
-)
+from agents import Agent, Runner, OpenAIChatCompletionsModel
 from client import external_client  # your shared Gemini client
 from dotenv import load_dotenv
 import os
 import requests
-import uvicorn  # ✅ import added here
+import uvicorn
 
+# Load environment variables
 load_dotenv()
 
 app = FastAPI(title="🌾 AgriGenius MCP Server (Gemini-Powered)")
@@ -68,16 +65,29 @@ def home():
 
 @app.post("/query")
 async def process_query(request: Request):
+    """
+    Handles incoming crop or chat queries from Firebase frontend.
+    Runs the main agent, and stores results in Firebase DB.
+    """
     data = await request.json()
     user_query = data.get("query")
     user_id = data.get("user_id", "anonymous")
 
     if not user_query:
-        return {"error": "Missing 'query' in request body."}
+        return {
+            "data": None,
+            "error": "Missing 'query' in request body."
+        }
 
-    # Run multi-agent flow
-    result = await runner.run(main_agent, input=user_query)
-    response_text = result.output_text
+    try:
+        # Run multi-agent flow
+        result = await runner.run(main_agent, input=user_query)
+        response_text = result.output_text
+    except Exception as e:
+        return {
+            "data": None,
+            "error": f"Agent error: {str(e)}"
+        }
 
     # Optional: store in Firebase Realtime DB
     if FIREBASE_URL:
@@ -91,11 +101,17 @@ async def process_query(request: Request):
         except Exception as e:
             print("⚠️ Firebase Save Error:", e)
 
-    return {"response": response_text}
+    # ✅ Structured JSON your frontend expects
+    return {
+        "data": {
+            "analysis": response_text
+        },
+        "error": None
+    }
 
 
 # -------------------------
-#  SERVER START (needed for Railway)
+#  SERVER START (for Railway)
 # -------------------------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
