@@ -9,10 +9,10 @@ import json
 
 load_dotenv()
 
-app = FastAPI(title="🌾 AgriGenius MCP Server (Gemini-Powered)")
+if not os.getenv("OPENAI_API_KEY") and os.getenv("GEMINI_API_KEY"):
+    os.environ["OPENAI_API_KEY"] = os.getenv("GEMINI_API_KEY")
 
-FIREBASE_URL = os.getenv("FIREBASE_DATABASE_URL")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+app = FastAPI(title="🌾 AgriGenius MCP Server (Gemini-Powered)")
 
 model = OpenAIChatCompletionsModel(
     model="gemini-1.5-flash",
