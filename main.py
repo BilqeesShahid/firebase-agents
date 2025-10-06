@@ -15,7 +15,7 @@ if not os.getenv("OPENAI_API_KEY") and os.getenv("GEMINI_API_KEY"):
 app = FastAPI(title="🌾 AgriGenius MCP Server (Gemini-Powered)")
 
 model = OpenAIChatCompletionsModel(
-    model="gemini-1.5-flash",
+    model="google/gemini-1.5-flash"
     openai_client=external_client
 )
 
@@ -23,7 +23,7 @@ model = OpenAIChatCompletionsModel(
 chatbot_agent = Agent(
     name="AgriGenius Chatbot Agent",
     instructions="You answer general agricultural questions about crops, fertilizers, and weather in a friendly way.",
-    model="gemini-1.5-flash"
+    model="google/gemini-1.5-flash"
 )
 
 # Technical agent
@@ -35,14 +35,14 @@ agriculture_agent = Agent(
         "you respond ONLY in pure JSON format like:\n"
         "{'topic': 'Crop Disease Report', 'disease': 'Blight', 'solution': 'Use Mancozeb fungicide', 'irrigation_advice': 'Avoid overwatering'}"
     ),
-    model="gemini-1.5-flash"
+   model="google/gemini-1.5-flash"
 )
 
 # Router agent
 main_agent = Agent(
     name="Main Agent",
     instructions="Route queries: general → chatbot_agent, technical → agriculture_agent.",
-    model="gemini-1.5-flash",
+    model="google/gemini-1.5-flash",
     handoffs=[chatbot_agent, agriculture_agent],
 )
 
