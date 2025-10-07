@@ -1,15 +1,14 @@
-# main.py
 from fastapi import FastAPI, Request
 from agents import Agent, Runner, OpenAIChatCompletionsModel
-from client import external_client
+from client import external_client   # THIS IS OK NOW
 from dotenv import load_dotenv
 import os
 import requests
 import uvicorn
 import json
 
-# Load environment variables
 load_dotenv()
+# rest of your server code remains the same
 
 # Ensure API keys are set
 if not os.getenv("OPENAI_API_KEY") and os.getenv("GEMINI_API_KEY"):
