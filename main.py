@@ -13,7 +13,7 @@ load_dotenv()
 if not os.getenv("OPENAI_API_KEY") and os.getenv("GEMINI_API_KEY"):
     os.environ["OPENAI_API_KEY"] = os.getenv("GEMINI_API_KEY")
 
-FIREBASE_URL = os.getenv("FIREBASE_URL")  # Optional Firebase integration
+FIREBASE_URL = os.getenv("FIREBASE_DATABASE_URL")  # Optional Firebase integration
 
 app = FastAPI(title="🌾 AgriGenius MCP Server (Gemini-Powered)")
 
@@ -56,15 +56,7 @@ runner = Runner()
 def home():
     return {"message": "🌾 AgriGenius MCP Server is running with Gemini!"}
 
-@app.get("/query")
-def get_query_info():
-    """
-    Quick GET endpoint to guide frontend.
-    """
-    return {
-        "message": "Use POST method to /query with JSON body: {'query': '...', 'user_id': '...'}"
-    }
-
+ 
 @app.post("/query")
 async def process_query(request: Request):
     """
