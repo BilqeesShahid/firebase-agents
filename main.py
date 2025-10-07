@@ -9,24 +9,27 @@ import json
 
 load_dotenv()
 
+# Ensure API keys are set
 if not os.getenv("OPENAI_API_KEY") and os.getenv("GEMINI_API_KEY"):
     os.environ["OPENAI_API_KEY"] = os.getenv("GEMINI_API_KEY")
 
+FIREBASE_URL = os.getenv("FIREBASE_URL")  # Optional Firebase integration
+
 app = FastAPI(title="🌾 AgriGenius MCP Server (Gemini-Powered)")
 
+# Model setup
 model = OpenAIChatCompletionsModel(
     model="google/gemini-1.5-flash",
     openai_client=external_client
 )
 
-# General agent
+# Agents
 chatbot_agent = Agent(
     name="AgriGenius Chatbot Agent",
     instructions="You answer general agricultural questions about crops, fertilizers, and weather in a friendly way.",
     model="google/gemini-1.5-flash"
 )
 
-# Technical agent
 agriculture_agent = Agent(
     name="Agriculture Expert Agent",
     instructions=(
@@ -35,10 +38,9 @@ agriculture_agent = Agent(
         "you respond ONLY in pure JSON format like:\n"
         "{'topic': 'Crop Disease Report', 'disease': 'Blight', 'solution': 'Use Mancozeb fungicide', 'irrigation_advice': 'Avoid overwatering'}"
     ),
-   model="google/gemini-1.5-flash"
+    model="google/gemini-1.5-flash"
 )
 
-# Router agent
 main_agent = Agent(
     name="Main Agent",
     instructions="Route queries: general → chatbot_agent, technical → agriculture_agent.",
@@ -48,15 +50,31 @@ main_agent = Agent(
 
 runner = Runner()
 
+# --- Routes ---
 
 @app.get("/")
 def home():
     return {"message": "🌾 AgriGenius MCP Server is running with Gemini!"}
 
+@app.get("/query")
+def get_query_info():
+    """
+    Quick GET endpoint to guide frontend.
+    """
+    return {
+        "message": "Use POST method to /query with JSON body: {'query': '...', 'user_id': '...'}"
+    }
 
 @app.post("/query")
 async def process_query(request: Request):
-    data = await request.json()
+    """
+    Process user query and route to appropriate agent.
+    """
+    try:
+        data = await request.json()
+    except json.JSONDecodeError:
+        return {"error": "Invalid JSON body."}
+
     user_query = data.get("query")
     user_id = data.get("user_id", "anonymous")
 
@@ -64,38 +82,29 @@ async def process_query(request: Request):
         return {"error": "Missing 'query' in request body."}
 
     try:
-        result = await runner.run(main_agent, input=user_query)
+        # Run agent synchronously (Runner.run may not be async)
+        result = runner.run(main_agent, input=user_query)
         response_text = result.output_text.strip()
     except Exception as e:
         return {"error": f"Agent error: {str(e)}"}
 
-    # Try to parse JSON from Gemini's response
-    parsed_data = None
+    # Try parsing agent output as JSON
     try:
         parsed_data = json.loads(response_text.replace("'", "\""))
     except json.JSONDecodeError:
-        # Fallback if model didn't follow format strictly
-        parsed_data = {
-            "topic": "General Response",
-            "analysis": response_text
-        }
+        parsed_data = {"topic": "General Response", "analysis": response_text}
 
-    # Save in Firebase (optional)
+    # Optional: save to Firebase
     if FIREBASE_URL:
         try:
-            payload = {
-                "user_id": user_id,
-                "query": user_query,
-                "response": parsed_data
-            }
+            payload = {"user_id": user_id, "query": user_query, "response": parsed_data}
             requests.post(f"{FIREBASE_URL}/agriReports.json", json=payload)
         except Exception as e:
             print("⚠️ Firebase Save Error:", e)
 
-    return parsed_data  # ✅ frontend expects direct JSON object
+    return parsed_data
 
-
+# --- Run server ---
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     uvicorn.run(app, host="0.0.0.0", port=port)
- 
